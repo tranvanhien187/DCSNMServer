@@ -1,6 +1,5 @@
 package com.company;
 
-import java.awt.*;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -11,12 +10,14 @@ import java.util.List;
 import java.util.Vector;
 
 public class ChineseChessServer {
+
     public static void main(String[] args) throws IOException {
         new ChineseChessServer();
     }
+    private static final String ip = "192.168.1.4";
     private static final int PORT=8888;
     static Vector<Handle> clients = new Vector<Handle>();
-    private int[] firstBoard = {
+    public static int[] board = {
             1, 3, 5, 7,16, 8, 6, 4, 2,
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 9, 0, 0, 0, 0, 0,10, 0,
@@ -28,7 +29,7 @@ public class ChineseChessServer {
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             17,19,21,23,32,24,22,20,18
     };
-    List<int[]> record = new ArrayList<>();
+    static List<int[]> recordList = new ArrayList<>();
 
     public ChineseChessServer() {
         try {
@@ -41,6 +42,7 @@ public class ChineseChessServer {
                     System.out.println("Ok");
                     clients.get(0).start();
                     clients.get(1).start();
+                    recordList.add(board.clone());
                 }
             }
         } catch (Exception e) {
@@ -53,8 +55,10 @@ class Handle extends Thread {
     Socket soc;
     DataOutputStream dos;
     DataInputStream dis;
+    String idAddress;
     public Handle(Socket soc) {
         try {
+            idAddress = soc.getInetAddress().toString();
             System.out.println("User : "+soc.getInetAddress());
             this.soc = soc;
             dos = new DataOutputStream(soc.getOutputStream());
@@ -68,6 +72,9 @@ class Handle extends Thread {
     public void run() {
         for (int i = 0;i<  ChineseChessServer.clients.size();i++) {
             try {
+                if(!ChineseChessServer.clients.get(i).idAddress.equals(idAddress)){
+                    continue;
+                }
                 if(i%2==0) {
                     System.out.println(i+"");
                     dos.writeUTF("1");
@@ -81,27 +88,34 @@ class Handle extends Thread {
         try {
 loop:		while (true) {
                 //Server nhan tu client
-//                int indexTo = Integer.parseInt(dis.readUTF());
-//                int indexFrom = Integer.parseInt(dis.readUTF());
-//                System.out.println(soc.getInetAddress()+","+indexTo+","+indexTo);
+                int indexFrom = Integer.parseInt(dis.readUTF());
+                int indexTo = Integer.parseInt(dis.readUTF());
+                System.out.println(soc.getInetAddress()+","+indexFrom+","+indexTo);
                 //Server xu ly
                 // 1.Kiểm tra đủ 2 người tham gia hay chưa
 //                if (.clients.size()<2) continue;
-                // 2.Kiểm tra lượt đánh có hợp lệ/ client có được quyền đánh hay không!
-//                if (this==CaroServer.clients.get(0) && CaroServer.dadanh.size()%2!=0) continue;
-//                if (this==CaroServer.clients.get(1) && CaroServer.dadanh.size()%2!=1) continue;
+                 //2.Kiểm tra lượt đánh có hợp lệ/ client có được quyền đánh hay không!
+                if (this==ChineseChessServer.clients.get(0) && ChineseChessServer.recordList.size()%2!=1) {
+                    continue;
+                }
+                if (this==ChineseChessServer.clients.get(1) && ChineseChessServer.recordList.size()%2!=0) continue;
 
                 // 3.Kiểm tra tọa độ client gửi có hợp lệ không
                 // Lưu vào lịch sử
+                ChineseChessServer.board[indexTo] = ChineseChessServer.board[indexFrom];
+                ChineseChessServer.board[indexFrom] = 0;
+                ChineseChessServer.recordList.add(ChineseChessServer.board.clone());
+                System.out.println(indexFrom+" gui ne"  +indexTo);
 
-                //4.Gửi lại tọa độ cho tất cả client biết
-//                for (Handle c : .clients) {
-//                    try {
-//                        c.dos.writeUTF("message");
-//                    }catch(Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                }
+                // 4.Gửi lại tọa độ cho tất cả client biết
+                for (Handle c : ChineseChessServer.clients) {
+                    try {
+                        c.dos.writeUTF(indexFrom+"");
+                        c.dos.writeUTF(indexTo+"");
+                    }catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
