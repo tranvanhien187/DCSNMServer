@@ -12,6 +12,8 @@ class ClientHandle extends Thread {
     DataOutputStream dos;
     DataInputStream dis;
     String idAddress;
+    boolean isReady = false;
+    private String namePlayer;
 
     public ClientHandle(Socket soc, int turn, int indexRoom) {
         try {
@@ -29,42 +31,45 @@ class ClientHandle extends Thread {
 
     @Override
     public void run() {
-        for (int i =0; i < Server.roomList.get(indexRoom).getClients().size(); i++) {
-            try {
-                // Send action start game to client
-                if (!Server.roomList.get(indexRoom).getClients().get(i).idAddress.equals(idAddress)) {
-                    continue;
-                }
-                dos.writeUTF(ChineseChessServer.KEY_START + "");
-                dos.writeUTF(turn + "");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
         try {
-            loop:
+            this.namePlayer = dis.readUTF();
+            while (true){
+//                System.out.println("Size "+Server.roomList.get(indexRoom).getClients().size());
+                if(Server.roomList.get(indexRoom).getClients().size()==2){
+                    if(Server.roomList.get(indexRoom).getClients().get(0).getNamePlayer()!=null
+                            && Server.roomList.get(indexRoom).getClients().get(1).getNamePlayer()!=null){
+                        for (int i =0; i < Server.roomList.get(indexRoom).getClients().size(); i++) {
+                            if (!Server.roomList.get(indexRoom).getClients().get(i).idAddress.equals(idAddress)) {
+                                continue;
+                            }
+                            dos.writeUTF(Room.KEY_START + "");
+                            dos.writeUTF( Server.roomList.get(indexRoom).getClients().get(0).getNamePlayer());
+                            dos.writeUTF( Server.roomList.get(indexRoom).getClients().get(1).getNamePlayer());
+                            dos.writeUTF(turn + "");
+                        }
+                        break;
+                    }
+                }
+            }
             while (true) {
                 int key = Integer.parseInt(dis.readUTF());
                 switch (key) {
-                    case ChineseChessServer.KEY_START: {
-                        break;
+                    case ChineseChessServer.KEY_START -> {
                     }
-                    case ChineseChessServer.KEY_MOVE: {
+                    case ChineseChessServer.KEY_MOVE -> {
                         handleActionMove();
-                        break;
                     }
-                    case ChineseChessServer.KEY_RED_WIN: {
+                    case ChineseChessServer.KEY_RED_WIN -> {
                         handleActionWin(ChineseChessServer.KEY_RED_WIN);
-                        break;
                     }
-                    case ChineseChessServer.KEY_BLACK_WIN: {
+                    case ChineseChessServer.KEY_BLACK_WIN -> {
                         handleActionWin(ChineseChessServer.KEY_BLACK_WIN);
-                        break;
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println(e.getMessage());
         }
     }
 
@@ -102,5 +107,13 @@ class ClientHandle extends Thread {
                 e.printStackTrace();
             }
         }
+    }
+
+    public String getNamePlayer() {
+        return namePlayer;
+    }
+
+    public void setNamePlayer(String namePlayer) {
+        this.namePlayer = namePlayer;
     }
 }

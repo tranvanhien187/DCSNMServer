@@ -10,6 +10,7 @@ public class Room {
     public static final int KEY_BLACK_WIN = 104;
     public static final int KEY_START = 100;
     public static final int KEY_MOVE = 101;
+    public static final int KEY_READY = 99;
     private static final String ip = "192.168.1.4";
     private static final int PORT=8888;
     private int indexRoom;

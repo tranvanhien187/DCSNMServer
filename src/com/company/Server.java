@@ -20,12 +20,16 @@ public class Server {
             ServerSocket server = new ServerSocket(8888);
             while (true) {
                 Socket soc = server.accept();
+                if (turn==1){
+                    //currentRoom.startGame();
+                    roomList.add(currentRoom);
+                }
                 ClientHandle client = new ClientHandle(soc,turn,indexRoom);
+                client.start();
                 currentRoom.addClient(client);
                 turn++;
                 if (currentRoom.getClients().size()==2){
-                    currentRoom.startGame();
-                    roomList.add(currentRoom);
+                    //currentRoom.startGame();
                     indexRoom++;
                     currentRoom = new Room(indexRoom);
                     turn=1;
