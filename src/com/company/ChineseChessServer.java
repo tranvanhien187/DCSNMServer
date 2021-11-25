@@ -14,6 +14,11 @@ public class ChineseChessServer {
     public static void main(String[] args) throws IOException {
         new ChineseChessServer();
     }
+
+    public static final int KEY_RED_WIN = 103;
+    public static final int KEY_BLACK_WIN = 104;
+    public static final int KEY_START = 100;
+    public static final int KEY_MOVE = 101;
     private static final String ip = "192.168.1.4";
     private static final int PORT=8888;
     static Vector<Handle> clients = new Vector<Handle>();
@@ -72,13 +77,16 @@ class Handle extends Thread {
     public void run() {
         for (int i = 0;i<  ChineseChessServer.clients.size();i++) {
             try {
+
+                // Send action start game to client
                 if(!ChineseChessServer.clients.get(i).idAddress.equals(idAddress)){
                     continue;
                 }
                 if(i%2==0) {
-                    System.out.println(i+"");
+                    dos.writeUTF(ChineseChessServer.KEY_START+"");
                     dos.writeUTF("1");
                 }else {
+                    dos.writeUTF(ChineseChessServer.KEY_START+"");
                     dos.writeUTF("2");
                 }
             }catch(Exception e) {
@@ -87,38 +95,68 @@ class Handle extends Thread {
         }
         try {
 loop:		while (true) {
-                //Server nhan tu client
-                int indexFrom = Integer.parseInt(dis.readUTF());
-                int indexTo = Integer.parseInt(dis.readUTF());
-                System.out.println(soc.getInetAddress()+","+indexFrom+","+indexTo);
-                //Server xu ly
-                // 1.Kiểm tra đủ 2 người tham gia hay chưa
-//                if (.clients.size()<2) continue;
-                 //2.Kiểm tra lượt đánh có hợp lệ/ client có được quyền đánh hay không!
-                if (this==ChineseChessServer.clients.get(0) && ChineseChessServer.recordList.size()%2!=1) {
-                    continue;
-                }
-                if (this==ChineseChessServer.clients.get(1) && ChineseChessServer.recordList.size()%2!=0) continue;
-
-                // 3.Kiểm tra tọa độ client gửi có hợp lệ không
-                // Lưu vào lịch sử
-                ChineseChessServer.board[indexTo] = ChineseChessServer.board[indexFrom];
-                ChineseChessServer.board[indexFrom] = 0;
-                ChineseChessServer.recordList.add(ChineseChessServer.board.clone());
-                System.out.println(indexFrom+" gui ne"  +indexTo);
-
-                // 4.Gửi lại tọa độ cho tất cả client biết
-                for (Handle c : ChineseChessServer.clients) {
-                    try {
-                        c.dos.writeUTF(indexFrom+"");
-                        c.dos.writeUTF(indexTo+"");
-                    }catch(Exception e) {
-                        e.printStackTrace();
+                int key = Integer.parseInt(dis.readUTF());
+                switch (key){
+                    case ChineseChessServer.KEY_START:
+                    {
+                        break ;
+                    }
+                    case ChineseChessServer.KEY_MOVE:
+                    {
+                        handleActionMove();
+                        break ;
+                    }
+                    case ChineseChessServer.KEY_RED_WIN:
+                    {
+                        handleActionWin(ChineseChessServer.KEY_RED_WIN);
+                        break ;
+                    }
+                    case ChineseChessServer.KEY_BLACK_WIN:
+                    {
+                        handleActionWin(ChineseChessServer.KEY_BLACK_WIN);
+                        break ;
                     }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private void handleActionMove() throws IOException {
+        int indexFrom = Integer.parseInt(dis.readUTF());
+        int indexTo = Integer.parseInt(dis.readUTF());
+        System.out.println(soc.getInetAddress()+","+indexFrom+","+indexTo);
+        if (this==ChineseChessServer.clients.get(0) && ChineseChessServer.recordList.size()%2!=1) {
+            return;
+        }
+        if (this==ChineseChessServer.clients.get(1) && ChineseChessServer.recordList.size()%2!=0) return;
+
+        // 3.Kiểm tra tọa độ client gửi có hợp lệ không
+        // Lưu vào lịch sử
+        ChineseChessServer.board[indexTo] = ChineseChessServer.board[indexFrom];
+        ChineseChessServer.board[indexFrom] = 0;
+        ChineseChessServer.recordList.add(ChineseChessServer.board.clone());
+        System.out.println(indexFrom+" gui ne"  +indexTo);
+
+        // 4.Gửi lại tọa độ cho tất cả client biết
+        for (Handle c : ChineseChessServer.clients) {
+            try {
+                c.dos.writeUTF(ChineseChessServer.KEY_MOVE+"");
+                c.dos.writeUTF(indexFrom+"");
+                c.dos.writeUTF(indexTo+"");
+            }catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    private void handleActionWin(int action) throws IOException{
+        for (Handle c : ChineseChessServer.clients) {
+            try {
+                c.dos.writeUTF(action+"");
+            }catch(Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
