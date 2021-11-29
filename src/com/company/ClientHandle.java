@@ -12,7 +12,6 @@ class ClientHandle extends Thread {
     DataOutputStream dos;
     DataInputStream dis;
     String idAddress;
-    boolean isReady = false;
     private String namePlayer;
 
     public ClientHandle(Socket soc, int turn, int indexRoom) {
@@ -34,7 +33,6 @@ class ClientHandle extends Thread {
         try {
             this.namePlayer = dis.readUTF();
             while (true){
-//                System.out.println("Size "+Server.roomList.get(indexRoom).getClients().size());
                 if(Server.roomList.get(indexRoom).getClients().size()==2){
                     if(Server.roomList.get(indexRoom).getClients().get(0).getNamePlayer()!=null
                             && Server.roomList.get(indexRoom).getClients().get(1).getNamePlayer()!=null){
@@ -54,23 +52,94 @@ class ClientHandle extends Thread {
             while (true) {
                 int key = Integer.parseInt(dis.readUTF());
                 switch (key) {
-                    case ChineseChessServer.KEY_START -> {
+                    case Room.KEY_START -> {
                     }
-                    case ChineseChessServer.KEY_MOVE -> {
+                    case Room.KEY_MOVE -> {
                         handleActionMove();
                     }
-                    case ChineseChessServer.KEY_RED_WIN -> {
-                        handleActionWin(ChineseChessServer.KEY_RED_WIN);
+                    case Room.KEY_RED_WIN -> {
+                        handleActionWin(Room.KEY_RED_WIN);
                     }
-                    case ChineseChessServer.KEY_BLACK_WIN -> {
-                        handleActionWin(ChineseChessServer.KEY_BLACK_WIN);
+                    case Room.KEY_BLACK_WIN -> {
+                        handleActionWin(Room.KEY_BLACK_WIN);
                     }
+                    case Room.KEY_SEND_REQUEST_PLAY_AGAIN -> {
+                        handleActionSendRequestPlayAgain();
+                    }
+                    case Room.KEY_ACCEPT_REQUEST_PLAY_AGAIN -> {
+                        handleActionAcceptRequestPlayAgain();
+                    }
+                    case Room.KEY_DECLINE_REQUEST_PLAY_AGAIN -> {
+                        handleActionDeclineRequestPlayAgain();
+                    }
+                    case Room.KEY_QUIT -> {
+                        handleActionQuit();
+                    }
+                }
+                if(this.dis==null || this.dos==null) {
+                    System.out.println("Room "+indexRoom + " break");
+                    break;
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println(e.getMessage());
         }
+    }
+
+    private void handleActionQuit() {
+        System.out.println("Room "+indexRoom + " handleActionQuit");
+        try {
+            for (ClientHandle c : Server.roomList.get(indexRoom).getClients()) {
+                if(c.turn!=turn){
+                    c.dos.writeUTF(Room.KEY_QUIT + "");
+                }
+                c.dos = null;
+                c.dis = null;
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void handleActionDeclineRequestPlayAgain() {
+        System.out.println("Room "+indexRoom + " handleActionDeclineRequestPlayAgain");
+        try {
+            for (ClientHandle c : Server.roomList.get(indexRoom).getClients()) {
+                if(c.turn!=turn){
+                    c.dos.writeUTF(Room.KEY_DECLINE_REQUEST_PLAY_AGAIN + "");
+                }
+                c.dos = null;
+                c.dis = null;
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+
+    private void handleActionAcceptRequestPlayAgain() {
+        try {
+            for (ClientHandle c : Server.roomList.get(indexRoom).getClients()) {
+                c.dos.writeUTF(Room.KEY_PLAY_AGAIN + "");
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    private void handleActionSendRequestPlayAgain() {
+        try {
+            int turn = Integer.parseInt(dis.readUTF());
+            for (ClientHandle c : Server.roomList.get(indexRoom).getClients()) {
+                if(c.turn!=turn){
+                    c.dos.writeUTF(Room.KEY_SEND_REQUEST_PLAY_AGAIN + "");
+                }
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
     }
 
     private void handleActionMove() throws IOException {
@@ -100,6 +169,7 @@ class ClientHandle extends Thread {
     }
 
     private void handleActionWin(int action) throws IOException {
+        System.out.println("Room "+indexRoom + " handleActionWin");
         for (ClientHandle c : Server.roomList.get(indexRoom).clients) {
             try {
                 c.dos.writeUTF(action + "");

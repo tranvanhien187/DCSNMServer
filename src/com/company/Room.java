@@ -8,6 +8,11 @@ public class Room {
     Vector<ClientHandle> clients = new Vector<>(2);
     public static final int KEY_RED_WIN = 103;
     public static final int KEY_BLACK_WIN = 104;
+    public static final int KEY_SEND_REQUEST_PLAY_AGAIN = 106;
+    public static final int KEY_ACCEPT_REQUEST_PLAY_AGAIN = 107;
+    public static final int KEY_DECLINE_REQUEST_PLAY_AGAIN = 108;
+    public static final int KEY_QUIT = 110;
+    public static final int KEY_PLAY_AGAIN = 109;
     public static final int KEY_START = 100;
     public static final int KEY_MOVE = 101;
     public static final int KEY_READY = 99;
